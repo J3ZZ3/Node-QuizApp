@@ -28,23 +28,51 @@ const rl = readline.createInterface({
 const askQuestion = (questionObj) => {
     console.log(`\n${questionObj.question}`);
     let timeRemaining = questionTime;
+    let userInput = '';
+    
+    const handleAnswer = (answer) => {
+        if (!answer.trim()) {
+            console.log('Invalid input. Please provide an answer.');
+            console.log(`Time remaining: ${timeRemaining} seconds`);
+            rl.question('Your answer: ', handleAnswer);
+            return;
+        }
+        
+        clearInterval(questionInterval);
+        if (answer.trim().toLowerCase() === questionObj.answer.trim().toLowerCase()) {
+            console.log('Correct!');
+            score += 1;
+        } else {
+            console.log(`Incorrect. The correct answer was: ${questionObj.answer}`);
+        }
+        moveToNextQuestion();
+    };
+
+    // Store the initial cursor position
+    process.stdout.write(`\n${questionObj.question}\n`);
+    process.stdout.write(`Time remaining: ${timeRemaining} seconds\n\n`);
+    process.stdout.write('Your answer: ');
+
     const questionInterval = setInterval(() => {
         timeRemaining -= 1;
-        process.stdout.write(`Time remaining: ${timeRemaining} seconds\r`);
+        
+        // Move cursor up 3 lines and clear
+        process.stdout.write('\x1B[3A\x1B[0J');
+        
+        // Redraw the question and timer
+        process.stdout.write(`${questionObj.question}\n`);
+        process.stdout.write(`Time remaining: ${timeRemaining} seconds\n\n`);
+        process.stdout.write('Your answer: ');
+        
         if (timeRemaining <= 0) {
             clearInterval(questionInterval);
             console.log('\nTime is up!');
+            console.log(`The correct answer was: ${questionObj.answer}`);
             moveToNextQuestion();
         }
     }, 1000);
 
-    rl.question('\nYour answer: ', (answer) => {
-        clearInterval(questionInterval);
-        if (answer.trim().toLowerCase() === questionObj.answer.toLowerCase()) {
-            score += 1;
-        }
-        moveToNextQuestion();
-    });
+    rl.question('', handleAnswer);
 };
 
 const moveToNextQuestion = () => {
@@ -63,7 +91,11 @@ const endQuiz = () => {
 };
 
 const startQuiz = () => {
-    console.log('Starting the quiz...');
+    console.log('\n=== Welcome to the Quiz! ===');
+    console.log(`You have ${totalQuizTime} seconds to complete ${questions.length} questions.`);
+    console.log(`Each question has a ${questionTime} second time limit.`);
+    console.log('Good luck!\n');
+    
     let totalTimeRemaining = totalQuizTime;
     const quizInterval = setInterval(() => {
         totalTimeRemaining -= 1;
